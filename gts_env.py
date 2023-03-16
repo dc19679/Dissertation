@@ -62,11 +62,6 @@ class GeneticToggleEnv(gym.Env):
         Initialise the GeneticToggleEnv environment
         """
 
-        # Initialise state
-        # Holds information about the current state of the environment and is updated
-        # with each step taken by the agent
-        self.state = [0,0,0,0]
-
         ### Define action and observation spaces ###
 
         # There are 4 possible actions the agent can take
@@ -80,9 +75,13 @@ class GeneticToggleEnv(gym.Env):
         # 4-Dimensional observation space representing the current state of the system, 
         # In this case it is the concentration of mRNAl, mRNAt, LacI and TetR
         # The values range from [0, infinty]
-        self.observation_space = spaces.Box(low=np.array([0.0, 0.0, 0.0, 0.0]), 
-                                            high=np.array([np.inf, np.inf, np.inf, np.inf]), 
-                                            dtype=np.float32)
+
+        low = np.array([0, 0, 0,0], dtype=np.float64)
+        high = np.array([np.inf, np.inf, np.inf, np.inf], dtype=np.float64) 
+
+        self.observation_space = spaces.Box(low=low, 
+                                            high=high, 
+                                            dtype=np.float64)
 
         # Set parameters
         self.aTc = aTc
@@ -120,6 +119,11 @@ class GeneticToggleEnv(gym.Env):
         self.params = (aTc, IPTG, klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, 
                        glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, 
                        klp, glp, ktp, gtp)
+        
+        # Initialise state
+        # Holds information about the current state of the environment and is updated
+        # with each step taken by the agent
+        self.state = None
 
         # self.reset()
 
@@ -128,30 +132,32 @@ class GeneticToggleEnv(gym.Env):
         Execute a single time step in the environment
         """
 
+        assert self.state is not None, "Call reset before using step method." 
+
         # The actions the agent can perform (0,1,2,3)
         if action == 0:
             
             # Increase aTc and IPTG
-            aTc += 4
-            IPTG += 0.05
+            self.aTc += 4
+            self.IPTG += 0.05
         elif action == 1:
             
             # Increase aTc but decrease IPTG
-            aTc += 4
-            IPTG -= 0.05
+            self.aTc += 4
+            self.IPTG -= 0.05
         elif action == 2:
             
             # Decrease aTc but increase IPTG
-            aTc -= 4
-            IPTG += 0.05
+            self.aTc -= 4
+            self.IPTG += 0.05
         else:
             
             # Decrease aTc and IPTG
-            aTc -= 4
-            IPTG -= 0.05
+            self.aTc -= 4
+            self.IPTG -= 0.05
 
 
-        def deterministic (u, t, args):
+        def deterministic (u, t, aTc, IPTG, args):
             """
             Determinsitic ODE system of the Genetic Toggle Switch
             """
@@ -166,7 +172,7 @@ class GeneticToggleEnv(gym.Env):
 
             return [dmRNAl_dt, dmRNAt_dt, dLacI_dt, dTetR_dt]
         
-
+        
         
         def rk4(state, t, h, args):
             """
@@ -179,10 +185,10 @@ class GeneticToggleEnv(gym.Env):
             """
 
 
-            k1 = deterministic(state, t, *self.params)
-            k2 = deterministic(state + k1 * (h / 2), t + h / 2, *args)
-            k3 = deterministic(state + k2 * (h / 2), t + h / 2, *args)
-            k4 = deterministic(state + k3 * h, t + h, *args)
+            k1 = deterministic(state, t, self.aTc, self.IPTG, self.params)
+            k2 = deterministic(state + k1 * (h / 2), t + h / 2, self.aTc, self.IPTG, self.params)
+            k3 = deterministic(state + k2 * (h / 2), t + h / 2, self.aTc, self.IPTG, self.params)
+            k4 = deterministic(state + k3 * h, t + h, self.aTc, self.IPTG, self.params)
 
             return (state + ((k1 + 2 * k2 + 2 * k3 + k4) / 6) * h)
         # Returns the current state of the environment using the previous environment state
@@ -252,19 +258,13 @@ class GeneticToggleEnv(gym.Env):
         TetR_0 = 0.0
 
         # Define initial state
-        self.state = np.array([mRNAl_0, mRNAt_0, LacI_0, TetR_0])
+        self.state = np.random.uniform(low=0, high=1000, size=(4,))
         
         # define intial time
         self.time = 0
 
         # Define step size
         self.h = 0.01
-
-        # Define initial aTc and IPTG concentrations
-        self.aTc = 20
-
-        # Define initial aTc and IPTG concentrations
-        self.IPTG = 0.25
 
         # Update environment variables
         self.aTc = 20
@@ -276,7 +276,7 @@ class GeneticToggleEnv(gym.Env):
         # Check if the observation space contains the current state
         if self.observation_space.contains(self.state):
             # Return the current state as a NumPy array
-            return self.state
+            return np.array(self.state)
 
 
 
