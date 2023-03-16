@@ -253,6 +253,18 @@ class GeneticToggleEnv(gym.Env):
 
         # Define initial state
         self.state = np.array([mRNAl_0, mRNAt_0, LacI_0, TetR_0])
+        
+        # define intial time
+        self.time = 0
+
+        # Define step size
+        self.h = 0.01
+
+        # Define initial aTc and IPTG concentrations
+        self.aTc = 20
+
+        # Define initial aTc and IPTG concentrations
+        self.IPTG = 0.25
 
         # Update environment variables
         self.aTc = 20
