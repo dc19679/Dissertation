@@ -1,0 +1,65 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import odeint
+
+
+klm0 = 3.20e-2
+klm = 8.30
+thetaAtc = 11.65
+etaAtc = 2.00
+thetaTet = 30.00
+etaTet = 2.00
+glm = 1.386e-1
+ktm0 = 1.19e-1
+ktm = 2.06
+thetaIptg = 9.06e-2
+etaIptg = 2.00
+thetaLac = 31.94
+etaLac = 2.00
+gtm = 1.386e-1
+klp = 9.726e-1
+glp = 1.65e-2
+ktp = 1.170
+gtp = 1.65e-2
+aTc = 24 
+IPTG = 0.25
+# Define the deterministic ODE system
+def deterministic(u, t, args):
+    mRNAl, mRNAt, LacI, TetR = u
+    klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp, aTc, IPTG = args
+
+    dmRNAl_dt = klm0 + (klm/(1 + ((TetR/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc)**etaTet))) - glm * mRNAl
+    dmRNAt_dt = ktm0 + (klm/(1 + ((LacI/thetaLac) / (1 + (IPTG / thetaIptg )**etaIptg)**etaLac))) - gtm * mRNAt
+    dLacI_dt = klp*mRNAl - glp*LacI
+    dTetR_dt = ktp*mRNAt - gtp*TetR
+
+    return [dmRNAl_dt, dmRNAt_dt, dLacI_dt, dTetR_dt]
+
+# Define the initial conditions and simulation parameters
+u0 = [0, 0, 0, 0]  # Initial concentrations of mRNAl, mRNAt, LacI, and TetR
+t = np.linspace(0, 1000, 10000)  # Time vector for simulation
+args = [3.20e-2, 8.30, 11.65, 2.00, 30.00, 2.00, 1.386e-1, 1.19e-1, 2.06, 9.06e-2, 2.00, 31.94, 2.00, 1.386e-1, 9.726e-1, 1.65e-2, 1.170, 1.65e-2, 20, 0]
+
+# Simulate the system
+sol = odeint(deterministic, u0, t, args=args)
+
+# Extract the concentrations of mRNAl, mRNAt, LacI, and TetR from the solution
+mRNAl = sol[:, 0]
+mRNAt = sol[:, 1]
+LacI = sol[:, 2]
+TetR = sol[:, 3]
+
+
+# Define the nullclines
+LacI_nullcline = klp*klm0/(glp*glm*(1 + ((TetR/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc)**etaTet)))
+TetR_nullcline = ktp*ktm0/(gtp*gtm*(1 + ((LacI/thetaLac) / (1 + (IPTG / thetaIptg )**etaIptg)**etaLac)))
+
+# Plot the nullclines
+fig, ax = plt.subplots()
+ax.plot(LacI, TetR, color='blue', label='Trajectory')
+ax.plot(LacI, LacI_nullcline, color='red', label='LacI nullcline')
+ax.plot(TetR_nullcline, TetR, color='green', label='TetR nullcline')
+ax.set_xlabel('LacI')
+ax.set_ylabel('TetR')
+ax.legend()
+plt.show()
