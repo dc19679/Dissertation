@@ -116,7 +116,7 @@ class GeneticToggleEnv(gym.Env):
         self.episode_length = episode_length
 
         # Store parameters in a tuple
-        self.params = (aTc, IPTG, klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, 
+        self.params = (klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, 
                        glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, 
                        klp, glp, ktp, gtp)
         
@@ -186,17 +186,19 @@ class GeneticToggleEnv(gym.Env):
 
 
             k1 = deterministic(state, t, self.aTc, self.IPTG, self.params)
-            k2 = deterministic(state + k1 * (h / 2), t + h / 2, self.aTc, self.IPTG, self.params)
-            k3 = deterministic(state + k2 * (h / 2), t + h / 2, self.aTc, self.IPTG, self.params)
-            k4 = deterministic(state + k3 * h, t + h, self.aTc, self.IPTG, self.params)
+            k2 = deterministic(state + np.array(k1) * (h / 2), t + h / 2, self.aTc, self.IPTG, self.params)
+            k3 = deterministic(state + np.array(k2) * (h / 2), t + h / 2, self.aTc, self.IPTG, self.params)
+            k4 = deterministic(state + np.array(k3) * h, t + h, self.aTc, self.IPTG, self.params)
 
-            return (state + ((k1 + 2 * k2 + 2 * k3 + k4) / 6) * h)
+            return (state + ((np.array(k1) + 2 * np.array(k2) + 2 * np.array(k3) + np.array(k4)) / 6) * h)
         # Returns the current state of the environment using the previous environment state
         # as the initial condition
         
         # Update the state using the RK4 integration method
         self.state = rk4(self.state, self.time, self.h, self.params)
 
+        # Initialise reward to 0
+        reward = 0
 
         # Calculate reward
         if self.target_state is not None:
@@ -233,8 +235,8 @@ class GeneticToggleEnv(gym.Env):
 
 
         info = {
-        'aTc concentration': aTc,
-        'IPTG concentration': IPTG,
+        'aTc concentration': self.aTc,
+        'IPTG concentration': self.IPTG,
         'lacI level': lacI,
         'tetR level': tetR,
         'Abs distance of lacI and lacI target': error_distance_LacI,
@@ -244,7 +246,7 @@ class GeneticToggleEnv(gym.Env):
         observation = self.state
 
         # Return observation, reward, and info
-        return observation, reward, info
+        return observation, reward, done, info
     
 
     def reset(self):
