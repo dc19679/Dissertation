@@ -59,8 +59,10 @@ def loop(dt):
     last_error = error
     
     # Update system state using ODEs
-    dmRNAl_dt = klm0 + (klm/(1 + ((TetR/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc)**etaTet))) - glm * mRNAl
-    dmRNAt_dt = ktm0 + (klm/(1 + ((LacI/thetaLac) / (1 + (IPTG / thetaIptg )**etaIptg)**etaLac))) - glm * mRNAt
+    klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
+
+    dmRNAl_dt = klm0 + (klm/(1 + ((TetR/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc))**etaTet)) - glm * mRNAl
+    dmRNAt_dt = ktm0 + (ktm/(1 + ((LacI/thetaLac) / (1 + (IPTG / thetaIptg )**etaIptg))**etaLac)) - gtm * mRNAt
     dLacI_dt = klp*mRNAl - glp*LacI
     dTetR_dt = ktp*mRNAt - gtp*TetR
     
