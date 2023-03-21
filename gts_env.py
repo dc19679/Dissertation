@@ -15,10 +15,10 @@ class GeneticToggleEnv(gym.Env):
 
     | Num |               Action               |
     |-----|------------------------------------|
-    |  0  | Increase aTc and TetR              |
+    |  0  | Increase aTc and IPTG              |
     |  1  | Increase aTc and decrease IPTG     |
     |  2  | Decrease IPTG and increase aTc     |
-    |  3  | Decrease IPTG and TetR             |
+    |  3  | Decrease IPTG and IPTG             |
   
   
   
@@ -57,7 +57,7 @@ class GeneticToggleEnv(gym.Env):
     def __init__(self, aTc = 20.0, IPTG = 0.25, klm0=3.20e-2, klm=8.30, thetaAtc=11.65, etaAtc=2.00, thetaTet=30.00, 
                  etaTet=2.00, glm=1.386e-1, ktm0=1.19e-1, ktm=2.06, thetaIptg=9.06e-2, 
                  etaIptg=2.00, thetaLac=31.94, etaLac=2.00, gtm=0.1, klp=0.1, glp=0.1, ktp=0.1,
-                 gtp=0.1, aTc_range=[0, 1], IPTG_range=[20, 100], target_state=[800, 280], episode_length=100):
+                 gtp=0.1, aTc_range=[20, 100], IPTG_range=[0, 1], target_state=[750, 280], episode_length=100):
         """
         Initialise the GeneticToggleEnv environment
         """
@@ -165,8 +165,8 @@ class GeneticToggleEnv(gym.Env):
 
             klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
 
-            dmRNAl_dt = klm0 + (klm/(1 + ((TetR/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc)**etaTet))) - glm * mRNAl
-            dmRNAt_dt = ktm0 + (klm/(1 + ((LacI/thetaLac) / (1 + (IPTG / thetaIptg )**etaIptg)**etaLac))) - glm * mRNAt
+            dmRNAl_dt = klm0 + (klm/(1 + ((TetR/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc))**etaTet)) - glm * mRNAl
+            dmRNAt_dt = ktm0 + (ktm/(1 + ((LacI/thetaLac) / (1 + (IPTG / thetaIptg )**etaIptg))**etaLac)) - gtm * mRNAt
             dLacI_dt = klp*mRNAl - glp*LacI
             dTetR_dt = ktp*mRNAt - gtp*TetR
 
@@ -205,10 +205,12 @@ class GeneticToggleEnv(gym.Env):
 
             # If the LacI and TetR values are in the unstable state then give a reward
             if (abs(self.state[2] - self.target_state[0])) < 5 and (abs(self.state[3] - self.target_state[1]) < 5):
-                reward += 1
+                reward += -(abs(self.state[2] - self.target_state[0]) + abs(self.state[3] - self.target_state[1]))
+                # print("Reward")
             # If the LacI and TetR are not in the unstable state then take away a reward
             else:
-                reward -= 1
+                reward -= -(abs(self.state[2] - self.target_state[0]) + abs(self.state[3] - self.target_state[1]))
+                # print("Penalty")
                 
         else:
             reward = 0
