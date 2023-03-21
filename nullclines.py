@@ -3,8 +3,6 @@ from matplotlib import pyplot as plt
 from math import nan
 import numpy as np
 
-
-
 # Parameters
 klm0 = 3.20e-2
 klm = 8.30
@@ -26,14 +24,7 @@ ktp = 1.170
 gtp = 1.65e-2
 
 
-# def hill(x, theta, eta):
-#     """
-#     Decreasing Hill function
-#     """
-#     return pow(1 + pow((x / theta), eta), -1)
-
-
-def deterministic (u, t, args):
+def deterministic(u, t, args):
     """
     Determinsitic ODE system of the Genetic Toggle Switch
     """
@@ -44,45 +35,51 @@ def deterministic (u, t, args):
 
     klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
 
-    dmRNAl_dt = klm0 + (klm/(1 + ((TetR/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc))**etaTet)) - glm * mRNAl
-    dmRNAt_dt = ktm0 + (ktm/(1 + ((LacI/thetaLac) / (1 + (IPTG / thetaIptg )**etaIptg))**etaLac)) - gtm * mRNAt
-    dLacI_dt = klp*mRNAl - glp*LacI
-    dTetR_dt = ktp*mRNAt - gtp*TetR
+    dmRNAl_dt = klm0 + (klm / (1 + ((TetR / thetaTet) / (1 + (aTc / thetaAtc) ** etaAtc)) ** etaTet)) - glm * mRNAl
+    dmRNAt_dt = ktm0 + (ktm / (1 + ((LacI / thetaLac) / (1 + (IPTG / thetaIptg) ** etaIptg)) ** etaLac)) - gtm * mRNAt
+    dLacI_dt = klp * mRNAl - glp * LacI
+    dTetR_dt = ktp * mRNAt - gtp * TetR
 
     return [dmRNAl_dt, dmRNAt_dt, dLacI_dt, dTetR_dt]
 
-params = [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp]
-time = np.linspace(0,2000,2001)
 
-solution = odeint(deterministic,[0,0,0,0], time, args=(params,))
+params = [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp,
+          glp, ktp, gtp]
+time = np.linspace(0, 2000, 2001)
 
-def nullclines(args, aTc = 20, IPTG = 0.25):
+solution = odeint(deterministic, [0, 0, 0, 0], time, args=(params,))
+
+
+def nullclines(args, aTc=20, IPTG=0.25):
     """
     Nullclines of the Genetic Toggle Switch
     """
     klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
     n = 201
-    LacI_vector = np.linspace(0, 2000, n)
-    print("LacI Vector:",LacI_vector)
-    TetR_vector = np.linspace(0, 2000, n)
+    LacI_vector = np.linspace(0, 3000, 301)
+    print("LacI Vector:", LacI_vector)
+    TetR_vector = np.linspace(0, 3000, 301)
     # print("TetR Vector:", TetR_vector)
 
-    mRNAL_vector =(klm0 + (klm/(1 + ((TetR_vector/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc))**etaTet))) / glm
-    # print("mRNAL vector:", mRNAL_vector )
-    mRNAT_vector = (ktm0 + (ktm/(1 + ((LacI_vector/thetaLac) / (1 + (IPTG / thetaIptg )**etaIptg))**etaLac))) / gtm
-    # print("mRNAT Vector:", mRNAT_vector)
+    mRNAL_vector = (klm0 + (klm / (1 + ((TetR_vector / thetaTet) / (1 + (aTc / thetaAtc) ** etaAtc)) ** etaTet))) / glm
 
-    n_lacI_vector = (klp * mRNAL_vector)/ glp
-    n_tetR_vector = (ktp * mRNAT_vector)/ gtp
+    mRNAT_vector = (ktm0 + (
+                ktm / (1 + ((LacI_vector / thetaLac) / (1 + (IPTG / thetaIptg) ** etaIptg)) ** etaLac))) / gtm
+
+
+    n_lacI_vector = (klp * mRNAL_vector) / glp
+    n_tetR_vector = (ktp * mRNAT_vector) / gtp
 
     # Plotting the nullclines
-    plt.plot(n_lacI_vector, TetR_vector,'g', label='LacI nullcline')
-    plt.plot(LacI_vector, n_tetR_vector,'c', label='TetR nullcline')
+    plt.plot(n_lacI_vector, TetR_vector, 'g', label='LacI nullcline')
+    plt.plot(LacI_vector, n_tetR_vector, 'c', label='TetR nullcline')
     plt.xlabel('LacI')
     plt.ylabel('TetR')
+    plt.xlim([0, 3500])
+    plt.ylim([0,1500])
     plt.title('LacI and TetR nucllines curves')
     plt.legend()
     plt.show()
 
-nullclines(params)
 
+nullclines(params)
