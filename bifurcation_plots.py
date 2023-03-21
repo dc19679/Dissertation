@@ -21,7 +21,7 @@ klp = 9.726e-1
 glp = 1.65e-2
 ktp = 1.170
 gtp = 1.65e-2
-aTc = 24
+aTc = 25
 IPTG = 0.25
 
 def deterministic(u, t, args):
@@ -30,10 +30,10 @@ def deterministic(u, t, args):
     """
     mRNAl, mRNAt, LacI, TetR = u
 
-    klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp, aTc, iptg = args
+    klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp, aTc, IPTG = args
 
-    dmRNAl_dt = klm0 + (klm/(1 + ((TetR/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc)**etaTet))) - glm * mRNAl
-    dmRNAt_dt = ktm0 + (klm/(1 + ((LacI/thetaLac) / (1 + (iptg / thetaIptg )**etaIptg)**etaLac))) - glm * mRNAt
+    dmRNAl_dt = klm0 + (klm/(1 + ((TetR/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc))**etaTet)) - glm * mRNAl
+    dmRNAt_dt = ktm0 + (ktm/(1 + ((LacI/thetaLac) / (1 + (IPTG / thetaIptg )**etaIptg))**etaLac)) - gtm * mRNAt
     dLacI_dt = klp*mRNAl - glp*LacI
     dTetR_dt = ktp*mRNAt - gtp*TetR
 
