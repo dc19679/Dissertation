@@ -50,15 +50,15 @@ time = np.linspace(0, 2000, 2001)
 solution = odeint(deterministic, [0, 0, 0, 0], time, args=(params,))
 
 
-def nullclines(args, aTc=20, IPTG=0.25):
+def nullclines(args, aTc=100, IPTG=0.25):
     """
     Nullclines of the Genetic Toggle Switch
     """
     klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
     n = 201
-    LacI_vector = np.linspace(0, 3000, 301)
+    LacI_vector = np.linspace(0, 5000, 501)
     print("LacI Vector:", LacI_vector)
-    TetR_vector = np.linspace(0, 3000, 301)
+    TetR_vector = np.linspace(0, 1500, 151)
     # print("TetR Vector:", TetR_vector)
 
     mRNAL_vector = (klm0 + (klm / (1 + ((TetR_vector / thetaTet) / (1 + (aTc / thetaAtc) ** etaAtc)) ** etaTet))) / glm
@@ -75,8 +75,6 @@ def nullclines(args, aTc=20, IPTG=0.25):
     plt.plot(LacI_vector, n_tetR_vector, 'c', label='TetR nullcline')
     plt.xlabel('LacI')
     plt.ylabel('TetR')
-    plt.xlim([0, 3500])
-    plt.ylim([0,1500])
     plt.title('LacI and TetR nucllines curves')
     plt.legend()
     plt.show()
