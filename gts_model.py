@@ -45,9 +45,9 @@ def deterministic(u, t, args):
 
 # Different initial conditions to see how the system behaves
 initial1 = [0, 0, 0, 0]
-initial2 = [20, 30, 40, 50]
-initial3 = [50, 50, 0, 100]
-initial4 = [90, 23, 180, 4]
+initial2 = [550, 360, 404, 530]
+initial3 = [440, 540, 0, 1]
+initial4 = [9, 233, 180, 4]
 
 params = [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp,
           glp, ktp, gtp]
@@ -59,15 +59,16 @@ sol3 = odeint(deterministic, initial3, time, args=(params,))
 sol4 = odeint(deterministic, initial4, time, args=(params,))
 
 
-plt.plot(time, sol[:, 2], 'g', label='Initial Cond 1')
-plt.plot(time, sol2[:, 2], 'r', label='Initial Cond 2')
-plt.plot(time, sol3[:, 2], 'b', label='Initial Cond 3')
-plt.plot(time, sol4[:, 2], 'y', label='Initial Cond 4')
-plt.xlabel('Time')
-plt.ylabel('LacI')
-plt.title('Cells stabilising to stable points ')
-plt.legend()
-plt.show()
+# plt.plot(time, sol[:, 2], 'g', label='Initial Cond 1')
+# plt.plot(time, sol2[:, 2], 'r', label='Initial Cond 2')
+# plt.plot(time, sol3[:, 2], 'b', label='Initial Cond 3')
+# plt.plot(time, sol4[:, 2], 'y', label='Initial Cond 4')
+# plt.xlabel('Time')
+# plt.ylabel('LacI')
+# plt.xlim([0,1000])
+# plt.title('Cells stabilising to stable points ')
+# plt.legend()
+# plt.show()
 
 ###### STABLE POINTS FOR LACI = 56.11 (56) and 2575.87 (2575.87) #########
 
@@ -77,6 +78,7 @@ plt.plot(time, sol3[:, 3], 'b', label='Initial Cond 3')
 plt.plot(time, sol4[:, 3], 'y', label='Initial Cond 4')
 plt.xlabel('Time')
 plt.ylabel('TetR')
+plt.xlim([0,1000])
 plt.title('Cells stabilising to stable points ')
 plt.legend()
 plt.show()
