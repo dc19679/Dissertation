@@ -30,14 +30,18 @@ def deterministic(u, t, args):
     """
     mRNAl, mRNAt, LacI, TetR = u
 
-    klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp, aTc, IPTG = args
+    aTc = 20
+    IPTG = 0.25
 
-    dmRNAl_dt = klm0 + (klm/(1 + ((TetR/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc))**etaTet)) - glm * mRNAl
-    dmRNAt_dt = ktm0 + (ktm/(1 + ((LacI/thetaLac) / (1 + (IPTG / thetaIptg )**etaIptg))**etaLac)) - gtm * mRNAt
-    dLacI_dt = klp*mRNAl - glp*LacI
-    dTetR_dt = ktp*mRNAt - gtp*TetR
+    klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
+
+    dmRNAl_dt = klm0 + (klm / (1 + ((TetR / thetaTet) / (1 + (aTc / thetaAtc) ** etaAtc)) ** etaTet)) - glm * mRNAl
+    dmRNAt_dt = ktm0 + (ktm / (1 + ((LacI / thetaLac) / (1 + (IPTG / thetaIptg) ** etaIptg)) ** etaLac)) - gtm * mRNAt
+    dLacI_dt = klp * mRNAl - glp * LacI
+    dTetR_dt = ktp * mRNAt - gtp * TetR
 
     return [dmRNAl_dt, dmRNAt_dt, dLacI_dt, dTetR_dt]
+
 
 # Create grid of IPTG values
 iptg_vals = np.linspace(0, 1, 100)
@@ -51,8 +55,11 @@ for iptg in iptg_vals:
     # Define function to solve for equilibria
     def find_equilibria(x, IPTG):
         mRNAl, mRNAt, LacI, TetR = x
+        params = [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac,
+                  gtm, klp,
+                  glp, ktp, gtp]
         # print(deterministic(x, 0, [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp, aTc, IPTG]))
-        return deterministic(x, 0, [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp, aTc, IPTG])    
+        return deterministic(x, 0, params)
     
     # Find equilibria
     sol = solve_ivp(lambda t, x: find_equilibria(x, iptg), [0, 1], [0.0, 0.0, 0.0, 0.0], rtol=1e-8, atol=1e-8)
