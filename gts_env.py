@@ -57,7 +57,7 @@ class GeneticToggleEnv(gym.Env):
     def __init__(self, aTc = 20.0, IPTG = 0.25, klm0=3.20e-2, klm=8.30, thetaAtc=11.65, etaAtc=2.00, thetaTet=30.00, 
                  etaTet=2.00, glm=1.386e-1, ktm0=1.19e-1, ktm=2.06, thetaIptg=9.06e-2, 
                  etaIptg=2.00, thetaLac=31.94, etaLac=2.00, gtm=0.1, klp=0.1, glp=0.1, ktp=0.1,
-                 gtp=0.1, aTc_range=[20, 100], IPTG_range=[0, 1], target_state=[750, 280], episode_length=100):
+                 gtp=0.1, aTc_range=[0, 100], IPTG_range=[0, 1], target_state=[750, 280], episode_length=100):
         """
         Initialise the GeneticToggleEnv environment
         """
