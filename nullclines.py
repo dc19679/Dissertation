@@ -50,13 +50,13 @@ time = np.linspace(0, 2000, 2001)
 solution = odeint(deterministic, [0, 0, 0, 0], time, args=(params,))
 
 
-def nullclines(args, aTc=100, IPTG=0.25):
+def nullclines(args, aTc=25, IPTG=0.34):
     """
     Nullclines of the Genetic Toggle Switch
     """
     klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
     n = 201
-    LacI_vector = np.linspace(0, 5000, 501)
+    LacI_vector = np.linspace(0, 4000, 501)
     print("LacI Vector:", LacI_vector)
     TetR_vector = np.linspace(0, 1500, 151)
     # print("TetR Vector:", TetR_vector)
