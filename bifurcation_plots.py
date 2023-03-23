@@ -1,4 +1,5 @@
 from scipy.integrate import solve_ivp
+from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -21,17 +22,17 @@ klp = 9.726e-1
 glp = 1.65e-2
 ktp = 1.170
 gtp = 1.65e-2
-aTc = 25
-IPTG = 0.25
 
-def deterministic(u, t, args):
+
+
+
+def deterministic(u, t, IPTG, args):
     """
     Determinsitic ODE system of the Genetic Toggle Switch
     """
     mRNAl, mRNAt, LacI, TetR = u
 
-    aTc = 20
-    IPTG = 0.25
+    aTc = 10
 
     klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
 
@@ -44,38 +45,24 @@ def deterministic(u, t, args):
 
 
 # Create grid of IPTG values
-iptg_vals = np.linspace(0, 1, 100)
+iptg_vals = np.linspace(0, 1, 201)
 
-# Create empty lists to store equilibria
-tetr_eqs = []
-iptg_eqs = []
+params = [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp,
+          glp, ktp, gtp]
 
-# Loop over IPTG values
-for iptg in iptg_vals:
-    # Define function to solve for equilibria
-    def find_equilibria(x, IPTG):
-        mRNAl, mRNAt, LacI, TetR = x
-        params = [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac,
-                  gtm, klp,
-                  glp, ktp, gtp]
-        # print(deterministic(x, 0, [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp, aTc, IPTG]))
-        return deterministic(x, 0, params)
-    
-    # Find equilibria
-    sol = solve_ivp(lambda t, x: find_equilibria(x, iptg), [0, 1], [0.0, 0.0, 0.0, 0.0], rtol=1e-8, atol=1e-8)
-    equilibria = sol.y.T[-1]
-    print(equilibria)
-    
-    # Append tetR and IPTG values to lists
-    tetr_eqs.append(equilibria[3])
-    iptg_eqs.append(iptg)
+time = np.linspace(0, 2000,num= 2001)
+tetR_vals = []
 
+for i in iptg_vals:
+    sol = odeint(deterministic, [0, 0, 0, 0], time, args=(i,params,))
+    tetR_vals.append(sol[-1, 3])
+    # Iterates 21 times
+    # Each iteration there is 201 arrays of 1x4 array
 
-# Plot bifurcation diagram
-fig, ax = plt.subplots()
-ax.plot(iptg_vals, tetr_eqs, 'b-')
-ax.set_xlabel('IPTG (mM)')
-ax.set_ylabel('TetR (nM)')
-ax.set_title('Bifurcation plots - IPTG vs TetR')
+print(tetR_vals)
+plt.plot(iptg_vals, tetR_vals)
+plt.xlabel("IPTG values")
+plt.ylabel("TetR")
+plt.title("Bifurcation plots of tetR for varying values of IPTG")
 plt.show()
- 
+
