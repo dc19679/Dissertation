@@ -3,6 +3,7 @@ import gym
 from gym import spaces
 from scipy.integrate import odeint
 
+
 class GeneticToggleEnv(gym.Env):
     """
     Custom gym environment for a genetic toggle switch
@@ -54,10 +55,10 @@ class GeneticToggleEnv(gym.Env):
 
     """
 
-    def __init__(self, aTc = 20.0, IPTG = 0.25, klm0=3.20e-2, klm=8.30, thetaAtc=11.65, etaAtc=2.00, thetaTet=30.00, 
-                 etaTet=2.00, glm=1.386e-1, ktm0=1.19e-1, ktm=2.06, thetaIptg=9.06e-2, 
+    def __init__(self, aTc=20.0, IPTG=0.25, klm0=3.20e-2, klm=8.30, thetaAtc=11.65, etaAtc=2.00, thetaTet=30.00,
+                 etaTet=2.00, glm=1.386e-1, ktm0=1.19e-1, ktm=2.06, thetaIptg=9.06e-2,
                  etaIptg=2.00, thetaLac=31.94, etaLac=2.00, gtm=0.1, klp=0.1, glp=0.1, ktp=0.1,
-                 gtp=0.1, aTc_range=[0, 100], IPTG_range=[0, 1], target_state=[750, 280], episode_length=100):
+                 gtp=0.1, aTc_range=[0, 100], IPTG_range=[0, 1], target_state=[520, 280], episode_length=2000):
         """
         Initialise the GeneticToggleEnv environment
         """
@@ -71,16 +72,16 @@ class GeneticToggleEnv(gym.Env):
         # --------> Decrease both inducers
 
         self.action_space = spaces.Discrete(4)
-        
+
         # 4-Dimensional observation space representing the current state of the system, 
         # In this case it is the concentration of mRNAl, mRNAt, LacI and TetR
         # The values range from [0, infinty]
 
-        low = np.array([0, 0, 0,0], dtype=np.float64)
-        high = np.array([np.inf, np.inf, np.inf, np.inf], dtype=np.float64) 
+        low = np.array([0, 0, 0, 0], dtype=np.float64)
+        high = np.array([np.inf, np.inf, np.inf, np.inf], dtype=np.float64)
 
-        self.observation_space = spaces.Box(low=low, 
-                                            high=high, 
+        self.observation_space = spaces.Box(low=low,
+                                            high=high,
                                             dtype=np.float64)
 
         # Set parameters
@@ -115,14 +116,18 @@ class GeneticToggleEnv(gym.Env):
         # Length of an episode
         self.episode_length = episode_length
 
+        # Initialise previous error distances
+        self.prev_error_distance_LacI = None
+        self.prev_error_distance_TetR = None
+
+
         # Store parameters in a tuple
-        self.params = (klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, 
-                       glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, 
+        self.params = (klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet,
+                       glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm,
                        klp, glp, ktp, gtp)
-        
+
         # Initialise state
-        # Holds information about the current state of the environment and is updated
-        # with each step taken by the agent
+        # Indicating that the state has not been defined
         self.state = None
 
         # self.reset()
@@ -132,32 +137,31 @@ class GeneticToggleEnv(gym.Env):
         Execute a single time step in the environment
         """
 
-        assert self.state is not None, "Call reset before using step method." 
+        assert self.state is not None, "Call reset before using step method."
 
         # The actions the agent can perform (0,1,2,3)
         if action == 0:
-            
+
             # Increase aTc and IPTG
-            self.aTc += 4
+            self.aTc += 2
             self.IPTG += 0.05
         elif action == 1:
-            
+
             # Increase aTc but decrease IPTG
-            self.aTc += 4
+            self.aTc += 2
             self.IPTG -= 0.05
         elif action == 2:
-            
+
             # Decrease aTc but increase IPTG
-            self.aTc -= 4
+            self.aTc -= 2
             self.IPTG += 0.05
         else:
-            
+
             # Decrease aTc and IPTG
-            self.aTc -= 4
+            self.aTc -= 2
             self.IPTG -= 0.05
 
-
-        def deterministic (u, t, aTc, IPTG, args):
+        def deterministic(u, t, aTc, IPTG, args):
             """
             Determinsitic ODE system of the Genetic Toggle Switch
             """
@@ -165,35 +169,39 @@ class GeneticToggleEnv(gym.Env):
 
             klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
 
-            dmRNAl_dt = klm0 + (klm/(1 + ((TetR/thetaTet) / (1 + (aTc / thetaAtc )**etaAtc))**etaTet)) - glm * mRNAl
-            dmRNAt_dt = ktm0 + (ktm/(1 + ((LacI/thetaLac) / (1 + (IPTG / thetaIptg )**etaIptg))**etaLac)) - gtm * mRNAt
-            dLacI_dt = klp*mRNAl - glp*LacI
-            dTetR_dt = ktp*mRNAt - gtp*TetR
+            dmRNAl_dt = klm0 + (
+                        klm / (1 + ((TetR / thetaTet) / (1 + (aTc / thetaAtc) ** etaAtc)) ** etaTet)) - glm * mRNAl
+            dmRNAt_dt = ktm0 + (
+                        ktm / (1 + ((LacI / thetaLac) / (1 + (IPTG / thetaIptg) ** etaIptg)) ** etaLac)) - gtm * mRNAt
+            dLacI_dt = klp * mRNAl - glp * LacI
+            dTetR_dt = ktp * mRNAt - gtp * TetR
 
             return [dmRNAl_dt, dmRNAt_dt, dLacI_dt, dTetR_dt]
-        
-        
-        
+
+        print("aTc level before rk4:", self.aTc)
+        print("IPTG level before rk4:", self.IPTG)
+
         def rk4(state, t, h, args):
             """
             Fourth Order Runge-Kutta method
             This function updates a single RK4 step
 
+            :param args: arguments
             :param state: The current state of the environment
             :param t: Current time
             :param h: Step size
             """
-
 
             k1 = deterministic(state, t, self.aTc, self.IPTG, self.params)
             k2 = deterministic(state + np.array(k1) * (h / 2), t + h / 2, self.aTc, self.IPTG, self.params)
             k3 = deterministic(state + np.array(k2) * (h / 2), t + h / 2, self.aTc, self.IPTG, self.params)
             k4 = deterministic(state + np.array(k3) * h, t + h, self.aTc, self.IPTG, self.params)
 
-            return (state + ((np.array(k1) + 2 * np.array(k2) + 2 * np.array(k3) + np.array(k4)) / 6) * h)
+            return state + ((np.array(k1) + 2 * np.array(k2) + 2 * np.array(k3) + np.array(k4)) / 6) * h
+
         # Returns the current state of the environment using the previous environment state
         # as the initial condition
-        
+
         # Update the state using the RK4 integration method
         self.state = rk4(self.state, self.time, self.h, self.params)
 
@@ -202,16 +210,32 @@ class GeneticToggleEnv(gym.Env):
 
         # Calculate reward
         if self.target_state is not None:
+            lacI, tetR = self.state[2], self.state[3]
+            lacI_target, tetR_target = self.target_state[0], self.target_state[1]
 
-            # If the LacI and TetR values are in the unstable state then give a reward
-            if (abs(self.state[2] - self.target_state[0])) < 5 and (abs(self.state[3] - self.target_state[1]) < 5):
-                reward += -(abs(self.state[2] - self.target_state[0]) + abs(self.state[3] - self.target_state[1]))
-                # print("Reward")
-            # If the LacI and TetR are not in the unstable state then take away a reward
+            # Calculate the absolute distances of the current state to the target state
+            error_distance_LacI = abs(lacI - lacI_target)
+            error_distance_TetR = abs(tetR - tetR_target)
+
+            # Calculate the previous absolute distances of the current state to the target state
+            prev_error_distance_LacI = self.prev_error_distance_LacI
+            prev_error_distance_TetR = self.prev_error_distance_TetR
+
+            # Calculate the difference in error distance between the current and previous time steps
+            diff_error_distance_LacI = prev_error_distance_LacI - error_distance_LacI
+            diff_error_distance_TetR = prev_error_distance_TetR - error_distance_TetR
+
+            # Update the previous error distances
+            self.prev_error_distance_LacI = error_distance_LacI
+            self.prev_error_distance_TetR = error_distance_TetR
+
+            # If the LacI and TetR values are moving towards the target state then give a reward
+            if diff_error_distance_LacI > 0 or diff_error_distance_TetR > 0:
+                reward = 1
+            # If the LacI and TetR are moving away from the target state then take away a reward
             else:
-                reward -= -(abs(self.state[2] - self.target_state[0]) + abs(self.state[3] - self.target_state[1]))
-                # print("Penalty")
-                
+                reward = -1
+
         else:
             reward = 0
 
@@ -232,38 +256,31 @@ class GeneticToggleEnv(gym.Env):
         lacI_target = self.target_state[0]
         tetR_target = self.target_state[1]
 
-        error_distance_LacI = abs(lacI - lacI_target) 
+        error_distance_LacI = abs(lacI - lacI_target)
         error_distance_TetR = abs(tetR - tetR_target)
 
-
         info = {
-        'aTc concentration': self.aTc,
-        'IPTG concentration': self.IPTG,
-        'lacI level': lacI,
-        'tetR level': tetR,
-        'Abs distance of lacI and lacI target': error_distance_LacI,
-        'Abs distance of tetR and tetR target': error_distance_TetR,
+            'aTc concentration': self.aTc,
+            'IPTG concentration': self.IPTG,
+            'lacI level': lacI,
+            'tetR level': tetR,
+            'Abs distance of lacI and lacI target': error_distance_LacI,
+            'Abs distance of tetR and tetR target': error_distance_TetR,
         }
 
         observation = self.state
 
         # Return observation, reward, and info
         return observation, reward, done, info
-    
 
     def reset(self):
         """
         Resets the state of the environment and returns an initial observation.
         """
-        # Define initial state values
-        mRNAl_0 = 0.0
-        mRNAt_0 = 0.0
-        LacI_0 = 0.0
-        TetR_0 = 0.0
 
         # Define initial state
-        self.state = np.random.uniform(low=0, high=1000, size=(4,))
-        
+        self.state = np.random.uniform(low=0, high=3000, size=(4,))
+
         # define intial time
         self.time = 0
 
@@ -275,14 +292,9 @@ class GeneticToggleEnv(gym.Env):
         self.IPTG = 0.25
 
         # Reset episode length counter
-        self.current_step = 0
+        self.episode_length = 2000
 
         # Check if the observation space contains the current state
         if self.observation_space.contains(self.state):
             # Return the current state as a NumPy array
             return np.array(self.state)
-
-
-
-
-
