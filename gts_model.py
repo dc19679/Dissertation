@@ -51,12 +51,17 @@ initial4 = [9, 233, 180, 4]
 
 params = [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp,
           glp, ktp, gtp]
-time = np.linspace(0, 1500, 1501)
+time = np.linspace(0, 10, 2)
+timesss = np.linspace(0, 20, 2)
 
 sol = odeint(deterministic, initial1, time, args=(params,))
-sol2 = odeint(deterministic, initial2, time, args=(params,))
-sol3 = odeint(deterministic, initial3, time, args=(params,))
-sol4 = odeint(deterministic, initial4, time, args=(params,))
+sol2 = odeint(deterministic, initial1, time, args=(params,))
+
+print("sol", sol)
+print("sol2", sol2)
+
+# sol3 = odeint(deterministic, initial3, time, args=(params,))
+# sol4 = odeint(deterministic, initial4, time, args=(params,))
 
 
 # plt.plot(time, sol[:, 2], 'g', label='Initial Cond 1')
@@ -72,15 +77,15 @@ sol4 = odeint(deterministic, initial4, time, args=(params,))
 
 ###### STABLE POINTS FOR LACI = 56.11 (56) and 2575.87 (2575.87) #########
 
-plt.plot(time, sol[:, 3], 'g', label='Initial Cond 1')
-plt.plot(time, sol2[:, 3], 'r', label='Initial Cond 2')
-plt.plot(time, sol3[:, 3], 'b', label='Initial Cond 3')
-plt.plot(time, sol4[:, 3], 'y', label='Initial Cond 4')
-plt.xlabel('Time')
-plt.ylabel('TetR')
-plt.xlim([0,1000])
-plt.title('Cells stabilising to stable points ')
-plt.legend()
-plt.show()
+# plt.plot(time, sol[:, 3], 'g', label='Initial Cond 1')
+# plt.plot(time, sol2[:, 3], 'r', label='Initial Cond 2')
+# plt.plot(time, sol3[:, 3], 'b', label='Initial Cond 3')
+# plt.plot(time, sol4[:, 3], 'y', label='Initial Cond 4')
+# plt.xlabel('Time')
+# plt.ylabel('TetR')
+# plt.xlim([0,1000])
+# plt.title('Cells stabilising to stable points ')
+# plt.legend()
+# plt.show()
 
 ###### STABLE POINTS FOR TETR = 72.8 (73) and 1072.62 (1073) #########
