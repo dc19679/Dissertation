@@ -50,7 +50,7 @@ time = np.linspace(0, 2000, 2001)
 solution = odeint(deterministic, [0, 0, 0, 0], time, args=(params,))
 
 
-def nullclines(args, aTc=25, IPTG=0.34):
+def nullclines(args, aTc=20, IPTG=0.25):
     """
     Nullclines of the Genetic Toggle Switch
     """
