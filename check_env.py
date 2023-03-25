@@ -13,16 +13,16 @@ env = GeneticToggleEnv()
 
 check_env(env)
 
-print("Observation space:", env.observation_space)
-print("Shape:", env.observation_space.shape)
+# print("Observation space:", env.observation_space)
+# print("Shape:", env.observation_space.shape)
 # Discrete(2) means that there is two discrete actions
-print("Action space:", env.action_space)
+# print("Action space:", env.action_space)
 
 # The reset method is called at the beginning of an episode
-# obs = env.reset()
+obs = env.reset()
 # Sample a random action
 action = env.action_space.sample()
-print("Sampled action:", action)
+# print("Sampled action:", action)
 obs, reward, done, info = env.step(int(action))
 
-print(obs.shape, reward, done, info)
+# print(obs.shape, reward, done, info)
