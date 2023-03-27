@@ -207,7 +207,8 @@ class GeneticToggleEnv(gym.Env):
         # Update the state using the RK4 integration method
         # h = 1 so it iterates one step at a time
         self.state = rk4(self.state, self.time, self.h, self.params)
-        print("state after the ode",self.state[2], self.state[3])
+        print("LacI after the ode:",self.state[2])
+        print("TetR after the ode:", self.state[3])
 
         # Initialise reward to 0
         reward = 0
@@ -234,7 +235,7 @@ class GeneticToggleEnv(gym.Env):
             self.prev_error_distance_TetR = error_distance_TetR
 
             # If the LacI and TetR values are moving towards the target state then give a reward
-            if diff_error_distance_LacI > 0 or diff_error_distance_TetR > 0:
+            if diff_error_distance_LacI > 0 and diff_error_distance_TetR > 0:
                 reward = 1
             # If the LacI and TetR are moving away from the target state then take away a reward
             else:
