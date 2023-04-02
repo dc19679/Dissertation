@@ -30,7 +30,7 @@ def deterministic(u, t, args):
     """
     mRNAl, mRNAt, LacI, TetR = u
 
-    aTc = 20
+    aTc = 100
     IPTG = 0.25
 
     klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
@@ -47,10 +47,10 @@ params = [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIp
           glp, ktp, gtp]
 time = np.linspace(0, 2000, 2001)
 
-solution = odeint(deterministic, [0, 0, 0, 0], time, args=(params,))
+# solution = odeint(deterministic, [0, 0, 0, 0], time, args=(params,))
 
 
-def nullclines(args, aTc=20, IPTG=0.25):
+def nullclines(args, aTc=25, IPTG=0.25):
     """
     Nullclines of the Genetic Toggle Switch
     """
