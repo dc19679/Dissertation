@@ -30,7 +30,7 @@ def deterministic(u, t, args):
     """
     mRNAl, mRNAt, LacI, TetR = u
 
-    aTc = 20
+    aTc = 100
     IPTG = 0.25
 
     klm0, klm, theta_atc, etaAtc, theta_Tet, eta_tet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
@@ -44,21 +44,54 @@ def deterministic(u, t, args):
 
 
 # Different initial conditions to see how the system behaves
-initial1 = [0, 0, 0, 0]
+initial1 = [60.11025325,20.85153934,60.11025325,20.85153934]
 initial2 = [550, 360, 404, 530]
 initial3 = [440, 540, 0, 1]
 initial4 = [9, 233, 180, 4]
 
 params = [klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp,
           glp, ktp, gtp]
-time = np.linspace(0, 10, 2)
+
+def rk4(state, t, h,aTc,IPTG, args):
+    """
+    Fourth Order Runge-Kutta method
+    This function updates a single RK4 step
+
+    :param args: arguments
+    :param state: The current state of the environment
+    :param t: Current time
+    :param h: Step size
+    """
+    # aTc = 100
+    # IPTG = 0.25
+
+    k1 = deterministic(state, t, aTc, IPTG, params)
+    k2 = deterministic(state + np.array(k1) * (h / 2), t + h / 2, aTc, IPTG, params)
+    k3 = deterministic(state + np.array(k2) * (h / 2), t + h / 2, aTc, IPTG, params)
+    k4 = deterministic(state + np.array(k3) * h, t + h, aTc, IPTG, params)
+
+    return state + ((np.array(k1) + 2 * np.array(k2) + 2 * np.array(k3) + np.array(k4)) / 6) * h
+
+
+time = np.linspace(0, 10000, 1000001)
 timesss = np.linspace(0, 20, 2)
 
-sol = odeint(deterministic, initial1, time, args=(params,))
-sol2 = odeint(deterministic, initial1, time, args=(params,))
+solution = []
+time = np.linspace(0,1000,1001)
+for i in time:
+    ans = rk4(initial2,i,h=1,args=(100,0.25,params,))
+    solution.append(ans)
 
+
+
+print(solution)
+
+
+sol = odeint(deterministic, initial1, time, args=(params,))
+sol2 = odeint(deterministic, [1222,3333,3333,5555], time, args=(params,))
+
+# print("sol", sol)
 print("sol", sol)
-print("sol2", sol2)
 
 # sol3 = odeint(deterministic, initial3, time, args=(params,))
 # sol4 = odeint(deterministic, initial4, time, args=(params,))
@@ -66,8 +99,8 @@ print("sol2", sol2)
 
 # plt.plot(time, sol[:, 2], 'g', label='Initial Cond 1')
 # plt.plot(time, sol2[:, 2], 'r', label='Initial Cond 2')
-# plt.plot(time, sol3[:, 2], 'b', label='Initial Cond 3')
-# plt.plot(time, sol4[:, 2], 'y', label='Initial Cond 4')
+# # plt.plot(time, sol3[:, 2], 'b', label='Initial Cond 3')
+# # plt.plot(time, sol4[:, 2], 'y', label='Initial Cond 4')
 # plt.xlabel('Time')
 # plt.ylabel('LacI')
 # plt.xlim([0,1000])
