@@ -52,31 +52,41 @@ def deterministic(u, t, aTc, IPTG, args):
     return [dmRNAl_dt, dmRNAt_dt, dLacI_dt, dTetR_dt]
 
 
-def rk4(state, h, t, args):
-    """
-    Fourth Order Runge-Kutta method
-    This function updates a single RK4 step
+# def rk4(state, h, t, args):
+#     """
+#     Fourth Order Runge-Kutta method
+#     This function updates a single RK4 step
+#
+#     :param args: arguments
+#     :param state: The current state of the environment
+#     :param t: Current time
+#     :param h: Step size
+#     """
+#
+#     k1 = deterministic(state, t, aTc, IPTG, params)
+#     k2 = deterministic(state + np.array(k1) * (h / 2), t + h / 2, aTc, IPTG, params)
+#     k3 = deterministic(state + np.array(k2) * (h / 2), t + h / 2, aTc, IPTG, params)
+#     k4 = deterministic(state + np.array(k3) * h, t + h, aTc, IPTG, params)
+#
+#     return state + ((np.array(k1) + 2 * np.array(k2) + 2 * np.array(k3) + np.array(k4)) / 6) * h
+#
 
-    :param args: arguments
-    :param state: The current state of the environment
-    :param t: Current time
-    :param h: Step size
-    """
+initial = [342, 224, 456, 40]
+# time = np.linspace(0,10000,2)
+# hello = rk4(initial, h=1, t=time, args=params)
+# # print(hello)
+# solution = odeint(deterministic, initial, time, args=(22,0.2,params,))
+# # print(solution)
+# print(solution[1])
+#
 
-    k1 = deterministic(state, t, aTc, IPTG, params)
-    k2 = deterministic(state + np.array(k1) * (h / 2), t + h / 2, aTc, IPTG, params)
-    k3 = deterministic(state + np.array(k2) * (h / 2), t + h / 2, aTc, IPTG, params)
-    k4 = deterministic(state + np.array(k3) * h, t + h, aTc, IPTG, params)
-
-    return state + ((np.array(k1) + 2 * np.array(k2) + 2 * np.array(k3) + np.array(k4)) / 6) * h
-
-
-initial = [342, 224, 3111, 1440]
-time = np.linspace(0,1,2)
-hello = rk4(initial, h=1, t=time, args=params)
-print(hello)
-solution = odeint(deterministic, initial, time, args=(22,0.2,params,))
-print(solution)
-
-
-
+for t_step in range(1):
+    t = np.linspace(0, 1, 5)
+    # args = (
+    #     self.klm0, self.klm, self.thetaAtc, self.etaAtc, self.thetaTet, self.etaTet, self.glm, self.ktm0,
+    #     self.ktm, self.thetaIptg, self.etaIptg, self.thetaLac, self.etaLac, self.gtm, self.klp, self.glp,
+    #     self.ktp, self.gtp)
+    y0 = initial
+    sol = odeint(deterministic, y0, t, args=(90, 40, params,))
+print(sol)
+print(sol[-1])
