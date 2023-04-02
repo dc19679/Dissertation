@@ -59,7 +59,7 @@ class GeneticToggleEnvs(gym.Env):
     def __init__(self, aTc=20.0, IPTG=0.25, klm0=3.20e-2, klm=8.30, thetaAtc=11.65, etaAtc=2.00, thetaTet=30.00,
                  etaTet=2.00, glm=1.386e-1, ktm0=1.19e-1, ktm=2.06, thetaIptg=9.06e-2,
                  etaIptg=2.00, thetaLac=31.94, etaLac=2.00, gtm=0.1, klp=0.1, glp=0.1, ktp=0.1,
-                 gtp=0.1, aTc_range=[0, 100], IPTG_range=[0, 1], target_state=[520, 280], episode_length=1000):
+                 gtp=0.1, aTc_range=[0, 100], IPTG_range=[0, 1], target_state=[520, 280], episode_length=2000):
         """
         Initialise the GeneticToggleEnv environment
         """
@@ -84,6 +84,8 @@ class GeneticToggleEnvs(gym.Env):
         self.observation_space = spaces.Box(low=low,
                                             high=high,
                                             dtype=np.float64)
+
+        #
 
         # Set parameters
         self.aTc = aTc
@@ -145,42 +147,32 @@ class GeneticToggleEnvs(gym.Env):
 
         # The actions the agent can perform (0,1,2,3)
         if action == 0:
-
-            # Increase aTc and IPTG
-            self.aTc += 2
-            self.IPTG += 0.05
-        elif action == 1:
-
-            # Increase aTc but decrease IPTG
-            self.aTc += 2
-            self.IPTG -= 0.05
+            # Increase aTc and IPTG, but only if they have not reached their maximum value
+            # if self.aTc < self.aTc_range[1]:
+            self.aTc = 25
+            # if self.IPTG < self.IPTG_range[1]:
+            self.IPTG = 0.25
+        elif action == 5:
+            # Increase aTc but decrease IPTG, but only if they have not reached their maximum value
+            # if self.aTc < self.aTc_range[1]:
+            self.aTc = 25
+            # if self.IPTG > self.IPTG_range[0]:
+            self.IPTG = 1
         elif action == 2:
+            # Decrease aTc but increase IPTG, but only if they have not reached their maximum value
+            # if self.aTc > self.aTc_range[0]:
+            self.aTc = 100
+            # if self.IPTG < self.IPTG_range[1]:
+            self.IPTG = 0.25
+        # else:
+        #     # Decrease aTc and IPTG, but only if they have not reached their maximum value
+        #     # if self.aTc > self.aTc_range[0]:
+        #     self.aTc = 5
+        #     # if self.IPTG > self.IPTG_range[0]:
+        #     self.IPTG -
+        #     = 0.05
 
-            # Decrease aTc but increase IPTG
-            self.aTc -= 2
-            self.IPTG += 0.05
-        else:
 
-            # Decrease aTc and IPTG
-            self.aTc -= 2
-            self.IPTG -= 0.05
-
-        # Ensure aTc and IPTG are within their respective ranges
-        if self.aTc < self.aTc_range[0]:
-
-            self.aTc = self.aTc_range[0]
-
-        elif self.aTc > self.aTc_range[1]:
-
-            self.aTc = self.aTc_range[1]
-
-        if self.IPTG < self.IPTG_range[0]:
-
-            self.IPTG = self.IPTG_range[0]
-
-        elif self.IPTG > self.IPTG_range[1]:
-
-            self.IPTG = self.IPTG_range[1]
 
         # print("state before the ode", self.state)
 
@@ -228,9 +220,9 @@ class GeneticToggleEnvs(gym.Env):
         # Update the state using the RK4 integration method
         # h = 1 so it iterates one step at a time
         self.state = rk4(self.state, self.time, self.h, self.params)
-        print("LacI after the ode:",self.state[2])
-        print("TetR after the ode:", self.state[3])
-        # print(self.state)
+        # print("LacI after the ode:",self.state[2])
+        # print("TetR after the ode:", self.state[3])
+        print(self.state)
 
         # Log the trajectory of the single cell in the LacI and TetR space
         self.lacI_values.append(self.state[2])
@@ -238,25 +230,34 @@ class GeneticToggleEnvs(gym.Env):
 
         # Initialise reward to 0
         reward = 0
+        print("aTc:", self.aTc)
+        print("IPTG:", self.IPTG)
 
-        # Calculate reward
+        # At each step, make sure the solver is taking number of steps in each step
 
         # Calculate reward
         lacI_diff = self.target_state[0] - self.state[2]
         tetR_diff = self.target_state[1] - self.state[3]
-        if abs(lacI_diff) < 10 and abs(tetR_diff) < 10:
-            # If the cell is in the unstable region
-            reward = 5
-        elif lacI_diff * (self.target_state[0] - self.prev_state[2]) > 0 and \
-                tetR_diff * (self.target_state[1] - self.prev_state[3]) > 0:
-            # If the cell is moving towards the unstable region
-            reward = 1
-        else:
-            # If the cell is moving away from the unstable region
-            reward = -1
-
+        # print(lacI_diff)
+        # print(tetR_diff)
+        # if abs(lacI_diff) < 50 and abs(tetR_diff) < 50:
+        #     # If the cell is in the unstable region
+        #     reward = 1000
+        #
+        #     # print("In state!")
+        #
+        #     # use euclidan distance
+        # # elif lacI_diff * (self.target_state[0] - self.prev_state[2]) > 0 and \
+        # #         tetR_diff * (self.target_state[1] - self.prev_state[3]) > 0:
+        #     # If the cell is moving towards the unstable region
+        #     # reward = 1
+        # elif 50 < abs(lacI_diff) < 500 and 50 < abs(tetR_diff) < 500:
+        #     # If the cell is moving away from the unstable region
+        #     reward = -1000
+        reward = -np.sqrt((lacI_diff)**2 + (tetR_diff)**2)
         # Check if episode is over
         done = False
+        # print("episode length",self.episode_length)
         if self.episode_length is not None:
             self.episode_length -= 1
             if self.episode_length == 0:
