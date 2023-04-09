@@ -263,7 +263,7 @@ class GeneticToggleEnviro(gym.Env):
         self.tetR_values = []
 
         # Reset episode length counter
-        self.episode_length = 10
+        self.episode_length = 5000
 
         self.step_size = 1
         self.odeint_steps = 2
@@ -302,7 +302,7 @@ class CustomActorCriticPolicy(ActorCriticPolicy):
 
 
 env = GeneticToggleEnviro()
-model = PPO(ActorCriticPolicy, env, verbose=1, ent_coef=0.4,clip_range=0.2)
+model = PPO(ActorCriticPolicy, env, verbose=1, ent_coef=0.35,clip_range=0.2)
 
 num_episodes = 10
 episode_length = 3000
