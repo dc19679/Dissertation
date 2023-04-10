@@ -5,6 +5,7 @@ from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
 from stable_baselines3.common.policies import ActorCriticPolicy
+import matplotlib.cm as cm
 
 class GeneticToggleEnvs(gym.Env):
     """
@@ -55,29 +56,14 @@ class GeneticToggleEnvs(gym.Env):
     1. Termination: If the cell is not around the unstable reigon for a long period of time
     2. Termination: If the cell maintains around the untable reigon for a good amount of time
 
-    """
-
-    def __init__(self,aTc = 20,IPTG = 0.25, klm0=3.20e-2, klm=8.30, thetaAtc=11.65, etaAtc=2.00, thetaTet=30.00,
+ """
+    def __init__(self, aTc=20, IPTG=0.25, klm0=3.20e-2, klm=8.30, thetaAtc=11.65, etaAtc=2.00, thetaTet=30.00,
                  etaTet=2.00, glm=1.386e-1, ktm0=1.19e-1, ktm=2.06, thetaIptg=9.06e-2,
                  etaIptg=2.00, thetaLac=31.94, etaLac=2.00, gtm=1.386e-1, klp=9.726e-1, glp=1.65e-2, ktp=1.170,
-                 gtp=1.65e-2, aTc_range=[0, 100], IPTG_range=[0, 1], LacI_target_state=520, TetR_target_state=280, episode_length=1000):
-        """
-        Initialise the GeneticToggleEnv environment
-        """
-
-        ### Define action and observation spaces ###
-
-        # There are 4 possible actions the agent can take
-        # --------> Increase both inducers
-        # --------> Increase one of the inducers and decrease the other inducer
-        # --------> Increase the other inducer and decrease the "other" one
-        # --------> Decrease both inducers
+                 gtp=1.65e-2, aTc_range=[0, 100], IPTG_range=[0, 1], LacI_target_state=520, TetR_target_state=280,
+                 episode_length=1000):
 
         self.action_space = spaces.Discrete(4)
-
-        # 4-Dimensional observation space representing the current state of the system,
-        # In this case it is the concentration of mRNAl, mRNAt, LacI and TetR
-        # The values range from [0, infinty]
 
         low = np.array([0, 0, 0, 0], dtype=np.float64)
         high = np.array([np.inf, np.inf, np.inf, np.inf], dtype=np.float64)
@@ -85,8 +71,6 @@ class GeneticToggleEnvs(gym.Env):
         self.observation_space = spaces.Box(low=low,
                                             high=high,
                                             dtype=np.float64)
-
-        #
 
         # Set parameters
         self.aTc = aTc
@@ -111,21 +95,23 @@ class GeneticToggleEnvs(gym.Env):
         self.gtp = gtp
 
         # Define the inducers range
-        self.aTc_range = aTc_range
-        self.IPTG_range = IPTG_range
+        self.aTc_range = [0, 100]
+        self.IPTG_range = [0, 1]
 
         # Target variable or the unstable reigon
-        self.LacI_target_state = 520
-        self.TetR_target_state = 280
+        self.LacI_target_state = LacI_target_state
+        self.TetR_target_state = TetR_target_state
+
+        self.step_counter = 0
 
         # Length of an episode
         self.episode_length = episode_length
 
-        self.step_size = 1
-        self.odeint_steps = 5
-
         self.lacI_values = []
         self.tetR_values = []
+
+        self.step_size = 1
+        self.odeint_steps = 5
 
         # Store parameters in a tuple
         self.params = (klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet,
@@ -133,11 +119,7 @@ class GeneticToggleEnvs(gym.Env):
                        klp, glp, ktp, gtp)
 
         # Initialise state
-        # Indicating that the state has not been defined
         self.state = None
-        self.prev_state = None
-
-        # self.reset()
 
     def step(self, action):
         """
@@ -175,8 +157,8 @@ class GeneticToggleEnvs(gym.Env):
         elif self.IPTG < self.IPTG_range[0]:
             self.IPTG = self.IPTG_range[0]
 
-        print("state before:",self.state)
-        # print("state before the ode", self.state)
+        self.lacI_values.append(self.state[2])
+        self.tetR_values.append(self.state[3])
 
         def deterministic(u, t, aTc, IPTG, args):
             """
@@ -188,126 +170,45 @@ class GeneticToggleEnvs(gym.Env):
 
             dmRNAl_dt = klm0 + (
                     klm / (1 + ((TetR / thetaTet) / (1 + (aTc / thetaAtc) ** etaAtc)) ** etaTet)) - glm * mRNAl
-            print("dmRNAl_dt",dmRNAl_dt)
             dmRNAt_dt = ktm0 + (
                     ktm / (1 + ((LacI / thetaLac) / (1 + (IPTG / thetaIptg) ** etaIptg)) ** etaLac)) - gtm * mRNAt
-            print("dmRNAt_dt",dmRNAt_dt)
+            # print("dmRNAt_dt",dmRNAt_dt)
             dLacI_dt = klp * mRNAl - glp * LacI
             dTetR_dt = ktp * mRNAt - gtp * TetR
 
             return [dmRNAl_dt, dmRNAt_dt, dLacI_dt, dTetR_dt]
 
-        # print("aTc level before rk4:", self.aTc)
-        # print("IPTG level before rk4:", self.IPTG)
+        # Returns the current state of the environment using the previous environment state as the initial condition
         for t_step in range(1):
+            t = np.linspace(0, self.step_size, self.odeint_steps)
             y0 = self.state
-            def rk4(state, t, h, args):
-                """
-                Fourth Order Runge-Kutta method
-                This function updates a single RK4 step
+            sol = odeint(deterministic, y0, t, args=(self.aTc, self.IPTG, self.params,))
+            self.step_counter += 1
 
-                :param args: arguments
-                :param state: The current state of the environment
-                :param t: Current time
-                :param h: Step size
-                """
-                print("aTc in rk4", self.aTc)
-                print("IPTG in rk4", self.IPTG)
+        self.state = sol[-1]
 
-                k1 = deterministic(state, t, self.aTc, self.IPTG, self.params)
-                # print("k1", k1)
-                k2 = deterministic(state + np.array(k1) * (h / 2), t + h / 2, self.aTc, self.IPTG, self.params)
-                k3 = deterministic(state + np.array(k2) * (h / 2), t + h / 2, self.aTc, self.IPTG, self.params)
-                k4 = deterministic(state + np.array(k3) * h, t + h, self.aTc, self.IPTG, self.params)
-
-                return state + ((np.array(k1) + 2 * np.array(k2) + 2 * np.array(k3) + np.array(k4)) / 6) * h
-            print("y0:", y0)
-            print("h:", self.h)
-            self.state = rk4(y0, self.time, self.h, self.params)
-            print("state after:", self.state)
-
-        # Returns the current state of the environment using the previous environment state
-        # as the initial condition
-
-        # Update the state using the RK4 integration method
-        # h = 1 so it iterates one step at a time
-        # print("LacI after the ode:",self.state[2])
-        # print("TetR after the ode:", self.state[3])
-        # print("LacI",self.state[2])
-        # print("TetR",self.state[3])
-
-        # Log the trajectory of the single cell in the LacI and TetR space
-        self.lacI_values.append(self.state[2])
-        self.tetR_values.append(self.state[3])
+        print("LacI", self.state[2])
+        print("TeR", self.state[3])
 
         # Initialise reward to 0
-        # print("aTc:", self.aTc)
-        # print("IPTG:", self.IPTG)
-
-        # At each step, make sure the solver is taking number of steps in each step
+        reward = 0
 
         # Calculate reward
         lacI_diff = abs(self.LacI_target_state - self.state[2])
         tetR_diff = abs(self.TetR_target_state - self.state[3])
 
-        # distance_from_target = np.sqrt(lacI_diff ** 2 + tetR_diff ** 2)
+        reward = -(lacI_diff**2 + tetR_diff**2)**0.5
 
-        if lacI_diff < 20:
-            reward = 1000
-            print("LacI in 20")
-        elif 20 <= lacI_diff < 50:
-            reward = 100
-            print("LacI in 50")
-        elif 50 <= lacI_diff < 100:
-            reward = 10
-            print("LacI in 100")
-        elif lacI_diff > 100:
-            reward = -100
-        elif tetR_diff < 20:
-            reward = 1000
-            print("TetR in 20")
-        elif 20 <= tetR_diff < 50:
-            reward = 100
-            print("TetR in 50")
-        elif 50 <= tetR_diff < 100:
-            reward = 10
-            print("TetR in 50")
-        elif tetR_diff > 100:
-            reward = -100
-
-        reward = 0.0
-        # Check if episode is over
         done = False
-        # print("episode length",self.episode_length)
+        # print(self.episode_length)
         if self.episode_length is not None:
             self.episode_length -= 1
             if self.episode_length == 0:
+                # print("episode done")
                 done = True
 
-        # observation = self.state
-        # Have more observation for the learning aspects - aTc and IPTG, other state variables
-
-        # Calculate additional information to return
-        lacI = self.state[2]
-        tetR = self.state[3]
-
-        lacI_target = self.LacI_target_state
-        tetR_target = self.TetR_target_state
-
-        error_distance_LacI = abs(lacI - lacI_target)
-        error_distance_TetR = abs(tetR - tetR_target)
-
-        info = {
-            'aTc concentration': self.aTc,
-            'IPTG concentration': self.IPTG,
-            'lacI level': lacI,
-            'tetR level': tetR,
-            'Abs distance of lacI and lacI target': error_distance_LacI,
-            'Abs distance of tetR and tetR target': error_distance_TetR,
-        }
-
+        info = {}
         observation = self.state
-
 
         # Return observation, reward, and info
         return observation, reward, done, info
@@ -319,13 +220,6 @@ class GeneticToggleEnvs(gym.Env):
 
         # Define initial state
         self.state = np.random.uniform(low=0, high=3000, size=(4,))
-
-        # define intial time
-        self.time = 0
-
-        # Define step size
-        self.h = 1
-
         # Update environment variables
         self.aTc = 20
         self.IPTG = 0.25
@@ -333,18 +227,28 @@ class GeneticToggleEnvs(gym.Env):
         self.LacI_target_state = 520
         self.TetR_target_state = 280
 
+        self.aTc_range = [0, 100]
+        self.IPTG_range = [0, 1]
+
         # reset LacI and TetR value lists
         self.lacI_values = []
         self.tetR_values = []
 
+        self.step_counter = 0
 
         # Reset episode length counter
-        self.episode_length = 2000
+        self.episode_length = 1000
+
+        self.step_size = 1
+        self.odeint_steps = 5
 
         # Check if the observation space contains the current state
         if self.observation_space.contains(self.state):
             # Return the current state as a NumPy array
             return np.array(self.state)
+        else:
+            # If the state is not within the observation space, return an array of zeros
+            return np.zeros_like(self.state)
 
     def render(self, mode='human'):
         if self.state is None:
@@ -352,10 +256,41 @@ class GeneticToggleEnvs(gym.Env):
 
         if mode == 'human':
             # plot trajectory in LacI-TetR space
-            plt.plot(self.lacI_values, self.tetR_values)
-            plt.xlabel('LacI')
-            plt.ylabel('TetR')
-            plt.title('Genetic Toggle Switch Trajectory')
+
+            num_time_steps = len(self.lacI_values)
+
+            # Set up the plot
+            fig, ax = plt.subplots()
+
+            # Choose a colormap for the segments
+            colormap = cm.get_cmap('viridis', num_time_steps)
+
+            # Plot each line segment with a different color
+            for i in range(1, num_time_steps):
+                ax.plot(
+                    self.lacI_values[i - 1:i + 1],
+                    self.tetR_values[i - 1:i + 1],
+                    color=colormap(i),
+                    lw=2,
+                    marker='o'
+                )
+            circle = plt.Circle((520, 280), 4, fill=False)
+            ax.add_artist(circle)
+
+            # Add a colorbar
+            sm = plt.cm.ScalarMappable(cmap=colormap, norm=plt.Normalize(vmin=0, vmax=num_time_steps - 1))
+            sm.set_array([])
+            cbar = plt.colorbar(sm)
+            cbar.set_label("Time step")
+
+            # Set axis labels
+            ax.set_xlabel("LacI")
+            ax.set_ylabel("TetR")
+
+            # Set title
+            ax.set_title("Cell Path in State Space")
+
+            # Display the plot
             plt.show()
 
         elif mode == 'rgb_array':
@@ -365,23 +300,12 @@ class GeneticToggleEnvs(gym.Env):
 env = GeneticToggleEnvs()
 model = PPO(ActorCriticPolicy, env, verbose=2)
 
-num_episodes = 1
-episode_length = 2000
+num_episodes = 100
+episode_length = 1000
 total_timesteps = num_episodes * episode_length
 
 model.learn(total_timesteps=total_timesteps)
 
-# time_steps = range(len(env.lacI_values))
-# print("time steps",len(env.lacI_values))
-# print("range of the length", range(len(env.lacI_values)))
-#
-# plt.scatter(time_steps, env.lacI_values, label='LacI')
-# plt.scatter(time_steps, env.tetR_values, label='TetR')
-# plt.xlabel('Time Step')
-# plt.ylabel('Expression Level')
-# plt.title('LacI and TetR Trajectories')
-# plt.legend()
-# plt.show()
 print("Length of lacI_values:", len(env.lacI_values))
 print("Length of tetR_values:", len(env.tetR_values))
 env.render()
