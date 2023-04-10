@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
 from stable_baselines3.common.policies import ActorCriticPolicy
 import matplotlib.cm as cm
-# from stable_baselines3.common.policies import MultiInputPolicy
+
 
 
 class GeneticToggle(gym.Env):
@@ -15,7 +15,7 @@ class GeneticToggle(gym.Env):
     def __init__(self,aTc = 20,IPTG = 0.25, klm0=3.20e-2, klm=8.30, thetaAtc=11.65, etaAtc=2.00, thetaTet=30.00,
                  etaTet=2.00, glm=1.386e-1, ktm0=1.19e-1, ktm=2.06, thetaIptg=9.06e-2,
                  etaIptg=2.00, thetaLac=31.94, etaLac=2.00, gtm=1.386e-1, klp=9.726e-1, glp=1.65e-2, ktp=1.170,
-                 gtp=1.65e-2, aTc_range=[0, 100], IPTG_range=[0, 1], LacI_target_state=520, TetR_target_state=280, episode_length=1000):
+                 gtp=1.65e-2, aTc_range=[0, 100], IPTG_range=[0, 1], LacI_target_state=520, TetR_target_state=280, episode_length=700):
 
 
         self.action_space = spaces.Discrete(4)
@@ -223,7 +223,7 @@ class GeneticToggle(gym.Env):
 
 
         # Reset episode length counter
-        self.episode_length = 1000
+        self.episode_length = 700
 
         self.step_size = 1
         self.odeint_steps = 5
@@ -259,10 +259,10 @@ class GeneticToggle(gym.Env):
                     self.lacI_values[i - 1:i + 1],
                     self.tetR_values[i - 1:i + 1],
                     color=colormap(i),
-                    lw=2,
+                    lw=1,
                     marker='o'
                 )
-            circle = plt.Circle((520, 280), 4, fill=False)
+            circle = plt.Circle((520, 280), 20, fill=False)
             ax.add_artist(circle)
 
             # Add a colorbar
@@ -292,12 +292,48 @@ class GeneticToggle(gym.Env):
 env = GeneticToggle()
 model = PPO(ActorCriticPolicy, env, verbose=2)
 
-num_episodes = 10000
-episode_length = 3000
+num_episodes = 10
+episode_length = 700
 total_timesteps = num_episodes * episode_length
 
 model.learn(total_timesteps=total_timesteps)
+# Save the model after training
+model.save("C:\\Users\\44749\\Documents\\Documents\\Dissertation Project\\Dissertation\\saved_models\\ppo_genetic_toggle")
+
 
 print("Length of lacI_values:", len(env.lacI_values))
 print("Length of tetR_values:", len(env.tetR_values))
+
+mean_rewards = []
+
+for episode in range(num_episodes):
+    obs = env.reset()
+    episode_reward = 0
+
+    for _ in range(episode_length):
+        action, _states = model.predict(obs)
+        obs, reward, done, info = env.step(action)
+        episode_reward += reward
+
+        if done:
+            break
+
+    mean_rewards.append(episode_reward / episode_length)
+
+
+def moving_average(data, window_size):
+    return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
+
+window_size = 5  # Adjust the window size according to your needs
+moving_avg_rewards = moving_average(mean_rewards, window_size)
+
+
+plt.plot(mean_rewards, label='Mean Reward')
+plt.plot(moving_avg_rewards, label='Moving Average', linewidth=2)
+plt.xlabel('Episode')
+plt.ylabel('Mean Reward')
+plt.legend()
+plt.show()
+
+
 env.render()
