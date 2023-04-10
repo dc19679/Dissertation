@@ -43,30 +43,37 @@ gtp = 1.65e-2
 
 
 # Initial conditions
-y0 = [0, 0,0, 0]
-aTc0 = 20
-IPTG0 = 0.25
+y0 = [100, 100, 100, 1000]
+aTc0 = 0
+IPTG0 = 0
 
 # PID control parameters for LacI
-LacI_Kc = 0.0001 # Gain
-LacI_TauI = 1.0
-LacI_tauD = 1.0
+LacI_P = 0.8 * 0.6# Gain
+LacI_I = LacI_P / (1.6/2)
+LacI_D = LacI_P * (0.125 * 1.6)
 LacI_integral = 0.0
 derivative_LacI = 0.0
 
-# PID control parameters for LacI
-TetR_Kc = 0.0001 # Gain
+# PID control parameters for TetR
+TetR_Kc = 0.001 # Gain
 TetR_TauI = 0.05
-TetR_tauD = 1.0
+TetR_tauD = 0.001
 TetR_integral = 0.0
 derivative_TetR = 0.0
 
 # Time space
-time = np.linspace(0,2000,2001)
+time = np.linspace(0,5000,5001)
 
 
 # Storage for plotting
 y = np.zeros((4, len(time)))
+
+
+
+
+randomting = np.zeros(len(time))
+randomting[0:] = 685.00
+
 
 
 # Assigning the first value of y to the initial condition
@@ -82,9 +89,9 @@ LacI_target = np.zeros(len(time))
 TetR_target = np.zeros(len(time))
 
 LacI_target[0:] = 520
+# LacI_target[500:] = 700
 TetR_target[0:] = 280
-print(LacI_target)
-print(TetR_target)
+
 
 # Parameters
 params = (klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet,
@@ -97,11 +104,12 @@ IPTG = np.zeros(len(time))
 # Error between the Setpoint and the system output
 error_LacI = np.zeros(len(time))
 error_TetR = np.zeros(len(time))
-
+print(range(len(time)-1))
 for i in range(len(time)-1):
 
-    ### Proportional ###
+    ## Proportional ###
     error_LacI[i] = LacI_target[i] - y0[2]
+    # print(y0[2])
     error_TetR[i] = TetR_target[i] - y0[3]
 
     ### Integral ###
@@ -110,18 +118,28 @@ for i in range(len(time)-1):
 
     ### Derivative ###
     if i >= 1:
-        derivative_LacI = (y[2,i] - y[2, i-1]) /  (time[i + 1] - time[i])
-        derivative_TetR = (y[3,i] - y[3, i-1]) /  (time[i + 1] - time[i])
+        derivative_LacI = (y[2,i] - y[2, i-1]) / (time[i + 1] - time[i])
+        derivative_TetR = (y[3,i] - y[3, i-1]) / (time[i + 1] - time[i])
 
-    ### Dual PI Controller ##
-    aTc[i] = aTc0 + LacI_Kc * error_LacI[i] + LacI_Kc/LacI_TauI * LacI_integral + LacI_Kc * LacI_tauD * derivative_LacI
-    IPTG[i] = IPTG0 + TetR_Kc * error_TetR[i] + TetR_Kc/TetR_TauI * TetR_integral + TetR_Kc * TetR_tauD * derivative_TetR
+    ### Dual PID Controller ##
+    aTc[i] = aTc0 + LacI_P * error_LacI[i] + (LacI_I) * LacI_integral + (LacI_D * derivative_LacI)
+    IPTG[i] = IPTG0 + TetR_Kc * error_TetR[i] + (TetR_Kc / TetR_TauI) * TetR_integral + (TetR_Kc * TetR_tauD * derivative_TetR)
 
+    if aTc[i] > 100:
+        aTc[i] = 100
+    elif aTc[i] < 0:
+        aTc[i] = 0
+
+    if IPTG[i] > 1:
+        IPTG[i] = 1
+    elif IPTG[i] < 0:
+        IPTG[i] = 0
     # Update the system
     solution = odeint(deterministic, y0, [time[i], time[i+1]], args=(aTc[i], IPTG[i], params))
 
     # Use the current solution as the input for the next time step
     y0 = solution[1]
+
 
     # Storing the values for plotting
     y[0, i + 1] = y0[0]
@@ -130,12 +148,27 @@ for i in range(len(time)-1):
     y[3, i + 1] = y0[3]
     # print(y)
 
+# Ziegler-Nichols PID Tuning
+# LacI_Kc = 0.6 * Ku_LacI
+# LacI_TauI = 0.5 * Tu_LacI
+# LacI_tauD = 0.125 * Tu_LacI
+# TetR_Kc = 0.6 * Ku_TetR
+# TetR_TauI = 0.5 * Tu_TetR
+# TetR_tauD = 0.125 * Tu_TetR
+
+# Reset the integral and derivative values
+# LacI_integral = 0.0
+# derivative_LacI = 0.0
+# TetR_integral = 0.0
 
 # PLot the graph
-plt.plot(time,LacI_target, linewidth = 1, label = "LacI Target")
-plt.plot(time,TetR_target, linewidth = 1, label = "TetR Target")
-plt.plot(time,y[2], linewidth = 2, label = "LacI")
-plt.plot(time,y[3], linewidth = 2, label = "TetR")
+plt.plot(time,LacI_target,'g:', linewidth = 1.5, label = "LacI Target")
+# plt.plot(time,TetR_target,'r:', linewidth = 1.5, label = "TetR Target")
+plt.plot(time,randomting,'b:')
+# plt.plot(time, aTc, label = "aTc")
+# plt.plot(time, IPTG, label = "IPTG")
+plt.plot(time,y[2], color='g',linewidth = 1, label = "LacI")
+# plt.plot(time,y[3], color='r',linewidth = 1, label = "TetR")
 plt.ylabel("LacI and TetR")
 plt.xlabel("Time")
 plt.legend(loc = "best")
