@@ -23,22 +23,19 @@ klp = 9.726e-1
 glp = 1.65e-2
 ktp = 1.170
 gtp = 1.65e-2
-aTc = 22
-IPTG = 0.2
+
 
 params = (klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet,
                        glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm,
                        klp, glp, ktp, gtp)
 
-state = [0,0,0,0]
 def deterministic(u, t, aTc, IPTG, args):
     """
     Determinsitic ODE system of the Genetic Toggle Switch
     """
     mRNAl, mRNAt, LacI, TetR = u
-
-    aTc = 22
-    IPTG = 0.2
+    # print("aTc",aTc)
+    # print("IPTG",IPTG)
 
     klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
 
@@ -52,26 +49,8 @@ def deterministic(u, t, aTc, IPTG, args):
     return [dmRNAl_dt, dmRNAt_dt, dLacI_dt, dTetR_dt]
 
 
-# def rk4(state, h, t, args):
-#     """
-#     Fourth Order Runge-Kutta method
-#     This function updates a single RK4 step
-#
-#     :param args: arguments
-#     :param state: The current state of the environment
-#     :param t: Current time
-#     :param h: Step size
-#     """
-#
-#     k1 = deterministic(state, t, aTc, IPTG, params)
-#     k2 = deterministic(state + np.array(k1) * (h / 2), t + h / 2, aTc, IPTG, params)
-#     k3 = deterministic(state + np.array(k2) * (h / 2), t + h / 2, aTc, IPTG, params)
-#     k4 = deterministic(state + np.array(k3) * h, t + h, aTc, IPTG, params)
-#
-#     return state + ((np.array(k1) + 2 * np.array(k2) + 2 * np.array(k3) + np.array(k4)) / 6) * h
-#
 
-initial = [342, 224, 456, 40]
+initial = [0, 0, 0,0 ]
 # time = np.linspace(0,10000,2)
 # hello = rk4(initial, h=1, t=time, args=params)
 # # print(hello)
@@ -82,11 +61,30 @@ initial = [342, 224, 456, 40]
 
 for t_step in range(1):
     t = np.linspace(0, 1, 5)
-    # args = (
-    #     self.klm0, self.klm, self.thetaAtc, self.etaAtc, self.thetaTet, self.etaTet, self.glm, self.ktm0,
-    #     self.ktm, self.thetaIptg, self.etaIptg, self.thetaLac, self.etaLac, self.gtm, self.klp, self.glp,
-    #     self.ktp, self.gtp)
+
     y0 = initial
-    sol = odeint(deterministic, y0, t, args=(90, 40, params,))
-print(sol)
-print(sol[-1])
+    sol = odeint(deterministic, y0, t, args=(30, 0.15, params,))
+
+# print(sol)
+
+hi = np.random.randint(low=0, high=1001, size=(1, 4))
+
+# print(hi)
+
+a = [2, 3]
+b = [77, 5]
+
+c = [abs(b_i - a_i) for a_i, b_i in zip(a, b)]
+print(c)
+
+
+
+
+# state before: [0 0 0 0]
+# aTc 30
+# IPTG 0.15
+# state after: [[0.         0.         0.         0.        ]
+#  [2.04732521 0.53541983 0.24999609 0.0786489 ]
+#  [4.02492413 1.05259196 0.98723077 0.31058207]
+#  [5.93516452 1.55207452 2.19306858 0.68992585]
+#  [7.78032318 2.03431179 3.84951428 1.210978  ]]
