@@ -10,12 +10,55 @@ import matplotlib.cm as cm
 
 
 class GeneticToggle(gym.Env):
+    """
+    Custom gym environment for a genetic toggle switch
 
+      ### Action Space ###
+
+  The action is a ndarray with shape () which can take the values (), indicating the
+  concentration of aTc and IPTG
+    | Num |               Action               |
+    |-----|------------------------------------|
+    |  0  | Increase aTc and IPTG              |
+    |  1  | Increase aTc and decrease IPTG     |
+    |  2  | Decrease IPTG and increase aTc     |
+    |  3  | Decrease IPTG and IPTG             |
+
+
+
+  ### Observation Space ###
+
+  The observation space is a ndarray with shape (), with the values corressponding to the
+  concentrations of aTc and IPTG and the levels if LacI and TetR
+    | Num | Observation           | Min                 | Max               |
+    |-----|-----------------------|---------------------|-------------------|
+    | 0   | mRNa LacI             |          0          |        10000      |
+    | 1   | mRNA TetR             |          0          |        10000      |
+    | 2   | Level of LacI         |          0          |        3000       |
+    | 3   | Level of TetR         |          0          |        2000       |
+
+
+    ### Rewards ###
+
+    Since the goal is to keep one cell about the unstable equilibrium state for as long as
+    possible, a reward of +1 will be given for every step that is towards the unstable
+    region, and a reward of +5 for being in that unstable region. Then there will be a 0
+    reward for going away from the unstable region.
+    Calculate the error as the absolute distance between the target level and the current
+    level of the LacI and TetR
+
+
+    ### Episode End ###
+
+    The episode will end if any of the following occurs:
+    1. Termination: If the cell is not around the unstable reigon for a long period of time
+    2. Termination: If the cell maintains around the untable reigon for a good amount of time
+    """
 
     def __init__(self,aTc = 20,IPTG = 0.25, klm0=3.20e-2, klm=8.30, thetaAtc=11.65, etaAtc=2.00, thetaTet=30.00,
                  etaTet=2.00, glm=1.386e-1, ktm0=1.19e-1, ktm=2.06, thetaIptg=9.06e-2,
                  etaIptg=2.00, thetaLac=31.94, etaLac=2.00, gtm=1.386e-1, klp=9.726e-1, glp=1.65e-2, ktp=1.170,
-                 gtp=1.65e-2, aTc_range=[0, 100], IPTG_range=[0, 1], LacI_target_state=520, TetR_target_state=280, episode_length=700):
+                 gtp=1.65e-2, aTc_range=[0, 100], IPTG_range=[0, 1], LacI_target_state=520, TetR_target_state=280, episode_length=1000):
 
 
         self.action_space = spaces.Discrete(4)
@@ -65,6 +108,9 @@ class GeneticToggle(gym.Env):
 
         self.lacI_values = []
         self.tetR_values = []
+        self.aTc_values = []
+        self.IPTG_values = []
+        self.euclidean_distances = []
 
         self.step_size = 1
         self.odeint_steps = 5
@@ -117,6 +163,9 @@ class GeneticToggle(gym.Env):
         self.lacI_values.append(self.state[2])
         self.tetR_values.append(self.state[3])
 
+        self.aTc_values.append(self.aTc)
+        self.IPTG_values.append(self.IPTG)
+
 
 
 
@@ -148,10 +197,6 @@ class GeneticToggle(gym.Env):
 
         self.state = sol[-1]
 
-        print("LacI",self.state[2])
-        print("TeR",self.state[3])
-
-
         # Initialise reward to 0
         reward = 0
 
@@ -159,28 +204,31 @@ class GeneticToggle(gym.Env):
         lacI_diff = abs(self.LacI_target_state - self.state[2])
         tetR_diff = abs(self.TetR_target_state - self.state[3])
 
-        if lacI_diff < 20:
+        euclidean = np.sqrt(lacI_diff**2 + tetR_diff**2)
+        self.euclidean_distances.append(euclidean)
+
+        if lacI_diff < 10:
             reward = 1000
-            print("LacI in 20")
-        elif 20 <= lacI_diff < 50:
+            # print("LacI in 20")
+        elif 10 <= lacI_diff < 40:
             reward = 100
-            print("LacI in 50")
-        elif 50 <= lacI_diff < 100:
+            # print("LacI in 50")
+        elif 40 <= lacI_diff < 90:
             reward = 10
-            print("LacI in 100")
-        elif lacI_diff > 100:
-            reward = -100
-        elif tetR_diff < 20:
+            # print("LacI in 100")
+        elif lacI_diff > 90:
+            reward = -1000
+        elif tetR_diff < 10:
             reward = 1000
-            print("TetR in 20")
-        elif 20 <= tetR_diff < 50:
+            # print("TetR in 20")
+        elif 10 <= tetR_diff < 40:
             reward = 100
-            print("TetR in 50")
-        elif 50 <= tetR_diff < 100:
+            # print("TetR in 50")
+        elif 40 <= tetR_diff < 900:
             reward = 10
-            print("TetR in 50")
-        elif tetR_diff > 100:
-            reward = -100
+            # print("TetR in 50")
+        elif tetR_diff > 90:
+            reward = -1000
 
 
         done = False
@@ -204,7 +252,7 @@ class GeneticToggle(gym.Env):
         """
 
         # Define initial state
-        self.state = np.random.uniform(low=0, high=3000, size=(4,))
+        self.state = np.random.uniform(low=0, high=1000, size=(4,))
         # Update environment variables
         self.aTc = 20
         self.IPTG = 0.25
@@ -219,11 +267,15 @@ class GeneticToggle(gym.Env):
         self.lacI_values = []
         self.tetR_values = []
 
+        self.aTc_values = []
+        self.IPTG_values = []
+        self.euclidean_distances = []
+
         self.step_counter = 0
 
 
         # Reset episode length counter
-        self.episode_length = 700
+        self.episode_length = 1000
 
         self.step_size = 1
         self.odeint_steps = 5
@@ -260,9 +312,9 @@ class GeneticToggle(gym.Env):
                     self.tetR_values[i - 1:i + 1],
                     color=colormap(i),
                     lw=1,
-                    marker='o'
+                    # marker='o'
                 )
-            circle = plt.Circle((520, 280), 20, fill=False)
+            circle = plt.Circle((520, 280), 10, fill=True)
             ax.add_artist(circle)
 
             # Add a colorbar
@@ -292,8 +344,8 @@ class GeneticToggle(gym.Env):
 env = GeneticToggle()
 model = PPO(ActorCriticPolicy, env, verbose=2)
 
-num_episodes = 10
-episode_length = 700
+num_episodes = 100
+episode_length = 1000
 total_timesteps = num_episodes * episode_length
 
 model.learn(total_timesteps=total_timesteps)
@@ -324,8 +376,9 @@ for episode in range(num_episodes):
 def moving_average(data, window_size):
     return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
 
-window_size = 5  # Adjust the window size according to your needs
+window_size = 20  # Adjust the window size according to your needs
 moving_avg_rewards = moving_average(mean_rewards, window_size)
+
 
 
 plt.plot(mean_rewards, label='Mean Reward')
@@ -334,6 +387,4 @@ plt.xlabel('Episode')
 plt.ylabel('Mean Reward')
 plt.legend()
 plt.show()
-
-
 env.render()
