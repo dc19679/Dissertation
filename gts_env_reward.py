@@ -207,28 +207,29 @@ class GeneticToggle(gym.Env):
         euclidean = np.sqrt(lacI_diff**2 + tetR_diff**2)
         self.euclidean_distances.append(euclidean)
 
-        if lacI_diff < 10:
-            reward = 1000
-            # print("LacI in 20")
-        elif 10 <= lacI_diff < 40:
-            reward = 100
-            # print("LacI in 50")
-        elif 40 <= lacI_diff < 90:
-            reward = 10
-            # print("LacI in 100")
-        elif lacI_diff > 90:
-            reward = -1000
-        elif tetR_diff < 10:
-            reward = 1000
-            # print("TetR in 20")
-        elif 10 <= tetR_diff < 40:
-            reward = 100
-            # print("TetR in 50")
-        elif 40 <= tetR_diff < 900:
-            reward = 10
-            # print("TetR in 50")
-        elif tetR_diff > 90:
-            reward = -1000
+        reward = -euclidean
+        # if lacI_diff < 10:
+        #     reward = 1000
+        #     # print("LacI in 20")
+        # elif 10 <= lacI_diff < 40:
+        #     reward = 100
+        #     # print("LacI in 50")
+        # elif 40 <= lacI_diff < 90:
+        #     reward = 10
+        #     # print("LacI in 100")
+        # elif lacI_diff > 90:
+        #     reward = -1000
+        # elif tetR_diff < 10:
+        #     reward = 1000
+        #     # print("TetR in 20")
+        # elif 10 <= tetR_diff < 40:
+        #     reward = 100
+        #     # print("TetR in 50")
+        # elif 40 <= tetR_diff < 900:
+        #     reward = 10
+        #     # print("TetR in 50")
+        # elif tetR_diff > 90:
+        #     reward = -1000
 
 
         done = False
@@ -342,19 +343,14 @@ class GeneticToggle(gym.Env):
 
 
 env = GeneticToggle()
-model = PPO(ActorCriticPolicy, env, verbose=2)
+model = PPO(ActorCriticPolicy, env, verbose=2,gamma=1.0)
 
-num_episodes = 100
+num_episodes = 1000
 episode_length = 1000
 total_timesteps = num_episodes * episode_length
 
 model.learn(total_timesteps=total_timesteps)
-# Save the model after training
-model.save("C:\\Users\\44749\\Documents\\Documents\\Dissertation Project\\Dissertation\\saved_models\\ppo_genetic_toggle")
 
-
-print("Length of lacI_values:", len(env.lacI_values))
-print("Length of tetR_values:", len(env.tetR_values))
 
 mean_rewards = []
 
@@ -376,15 +372,52 @@ for episode in range(num_episodes):
 def moving_average(data, window_size):
     return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
 
-window_size = 20  # Adjust the window size according to your needs
+# Different initial conditions
+# 2D graph od ED over time
+# 2D plot of the cell path
+# Error plots
+# How generalising it is/ overfitting
+
+
+window_size = 10  # Adjust the window size according to your needs
 moving_avg_rewards = moving_average(mean_rewards, window_size)
 
+print("moving average rewards:", moving_avg_rewards)
+print("aTc values:", env.aTc_values)
+print("Length of aTc values",len(env.aTc_values))
+print("IPTG values:",env.IPTG_values)
+print("Length of IPTG values:", len(env.IPTG_values))
+print("Euclidan distance:", env.euclidean_distances)
+print("Length of ED:", len(env.euclidean_distances))
 
 
-plt.plot(mean_rewards, label='Mean Reward')
+plt.figure()
+# plt.plot(mean_rewards, label='Mean Reward')
 plt.plot(moving_avg_rewards, label='Moving Average', linewidth=2)
 plt.xlabel('Episode')
 plt.ylabel('Mean Reward')
 plt.legend()
 plt.show()
+
+plt.figure()
+plt.plot(np.linspace(0,len(env.aTc_values), len(env.aTc_values)), env.aTc_values)
+plt.xlabel("time")
+plt.ylabel("aTc")
+plt.title("aTc over time")
+plt.show()
+
+plt.figure()
+plt.plot(np.linspace(0,len(env.IPTG_values),len(env.IPTG_values)), env.IPTG_values)
+plt.xlabel("time")
+plt.ylabel("IPTG")
+plt.title("IPTG over time")
+plt.show()
+
+plt.figure()
+plt.plot(np.linspace(0,len(env.euclidean_distances), len(env.euclidean_distances)), env.euclidean_distances)
+plt.xlabel("time")
+plt.ylabel("ED")
+plt.title("ED over time")
+plt.show()
+
 env.render()
