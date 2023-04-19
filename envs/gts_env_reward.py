@@ -208,29 +208,6 @@ class GeneticToggle(gym.Env):
         self.euclidean_distances.append(euclidean)
 
         reward = -euclidean
-        # if lacI_diff < 10:
-        #     reward = 1000
-        #     # print("LacI in 20")
-        # elif 10 <= lacI_diff < 40:
-        #     reward = 100
-        #     # print("LacI in 50")
-        # elif 40 <= lacI_diff < 90:
-        #     reward = 10
-        #     # print("LacI in 100")
-        # elif lacI_diff > 90:
-        #     reward = -1000
-        # elif tetR_diff < 10:
-        #     reward = 1000
-        #     # print("TetR in 20")
-        # elif 10 <= tetR_diff < 40:
-        #     reward = 100
-        #     # print("TetR in 50")
-        # elif 40 <= tetR_diff < 900:
-        #     reward = 10
-        #     # print("TetR in 50")
-        # elif tetR_diff > 90:
-        #     reward = -1000
-
 
         done = False
         # print(self.episode_length)
@@ -315,7 +292,7 @@ class GeneticToggle(gym.Env):
                     lw=1,
                     # marker='o'
                 )
-            circle = plt.Circle((520, 280), 10, fill=True)
+            circle = plt.Circle((520, 280), 8, fill=True)
             ax.add_artist(circle)
 
             # Add a colorbar

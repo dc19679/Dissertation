@@ -50,13 +50,13 @@ time = np.linspace(0, 2000, 2001)
 # solution = odeint(deterministic, [0, 0, 0, 0], time, args=(params,))
 
 
-def nullclines(args, aTc=25, IPTG=0.25):
+def nullclines(args, aTc=100, IPTG=0.25):
     """
     Nullclines of the Genetic Toggle Switch
     """
     klm0, klm, thetaAtc, etaAtc, thetaTet, etaTet, glm, ktm0, ktm, thetaIptg, etaIptg, thetaLac, etaLac, gtm, klp, glp, ktp, gtp = args
     n = 201
-    LacI_vector = np.linspace(0, 4000, 501)
+    LacI_vector = np.linspace(0, 4000, 401)
     print("LacI Vector:", LacI_vector)
     TetR_vector = np.linspace(0, 1500, 151)
     # print("TetR Vector:", TetR_vector)
@@ -70,14 +70,28 @@ def nullclines(args, aTc=25, IPTG=0.25):
     n_lacI_vector = (klp * mRNAL_vector) / glp
     n_tetR_vector = (ktp * mRNAT_vector) / gtp
 
+
     # Plotting the nullclines
-    plt.plot(n_lacI_vector, TetR_vector, 'g', label='LacI nullcline')
-    plt.plot(LacI_vector, n_tetR_vector, 'c', label='TetR nullcline')
-    plt.xlabel('LacI')
-    plt.ylabel('TetR')
-    plt.title('LacI and TetR nucllines curves')
+    plt.plot(n_lacI_vector, TetR_vector,'g',linewidth = 2, label='LacI nullcline')
+    plt.plot(LacI_vector, n_tetR_vector, 'c', linewidth = 2, label='TetR nullcline')
+
+
+    plt.xlabel('LacI (a.u)', fontweight='bold')
+    plt.ylabel('TetR (a.u)', fontweight='bold')
+    plt.title('LacI and TetR nucllines curves', fontweight = "bold")
     plt.legend()
+    # Set the x and y axis ticks to increments of 500
+    plt.xticks(np.arange(0, max(LacI_vector) + 1, 1000))
+    plt.yticks(np.arange(0, max(TetR_vector) + 1, 500))
+    ax = plt.gca()
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontweight('bold')
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontweight('bold')
+
     plt.show()
+
+
 
 
 nullclines(params)
